@@ -1,15 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   X, 
-  Clock, 
-  Server, 
-  Tag, 
+  FileText, 
   ShieldAlert, 
-  CheckCircle, 
+  CheckCircle2, 
   Copy, 
-  Check, 
-  FileText,
-  AlertTriangle
+  Check 
 } from 'lucide-react';
 import AiAnalysisSection from './AiAnalysisSection.jsx';
 
@@ -20,7 +16,7 @@ export default function LogDetailsModal({
   analyzing,
   aiError
 }) {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -40,149 +36,150 @@ export default function LogDetailsModal({
 
   const getSeverityClass = (sev) => {
     switch (sev?.toUpperCase()) {
-      case 'CRITICAL': return 'sev-critical';
-      case 'FATAL': return 'sev-fatal';
-      case 'ERROR': return 'sev-error';
-      case 'WARN': return 'sev-warn';
-      default: return 'sev-info';
+      case 'CRITICAL': return 'badge-sev-critical';
+      case 'FATAL': return 'badge-sev-fatal';
+      case 'ERROR': return 'badge-sev-error';
+      case 'WARN': case 'WARNING': return 'badge-sev-warn';
+      default: return 'badge-sev-info';
     }
   };
 
-  const scoreColor = 
-    log.anomalyScore >= 50 ? '#f43f5e' : 
-    log.anomalyScore >= 25 ? '#f59e0b' : '#10b981';
+  const scoreClass = 
+    log.anomalyScore >= 50 ? 'score-val-red' : 
+    log.anomalyScore >= 25 ? 'score-val-amber' : 'score-val-green';
+
+  const scoreFillClass =
+    log.anomalyScore >= 50 ? 'bar-fill-red' :
+    log.anomalyScore >= 25 ? 'bar-fill-amber' : 'bar-fill-green';
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div className={`modal-icon-badge ${log.isAnomaly ? 'modal-icon-anomaly' : 'modal-icon-normal'}`}>
-              {log.isAnomaly ? <ShieldAlert size={20} /> : <CheckCircle size={20} />}
+        <div className="modal-head">
+          <div className="modal-title-wrap">
+            <div className={`modal-status-badge ${log.isAnomaly ? 'badge-is-anomaly' : 'badge-is-normal'}`}>
+              {log.isAnomaly ? <ShieldAlert size={16} /> : <CheckCircle2 size={16} />}
             </div>
             <div>
-              <h2 className="modal-title">{log.eventType}</h2>
-              <div className="modal-id-subtitle">
-                <span>ID: {log.id}</span>
-                <span className="dot-divider">•</span>
-                <span>Source: {log.source}</span>
+              <h2 className="modal-event-title">{log.eventType}</h2>
+              <div className="modal-id-row font-mono">
+                <span>{log.id}</span>
+                <span className="divider-dot">•</span>
+                <span>{log.source}</span>
               </div>
             </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose} title="Close (Esc)">
-            <X size={18} />
+          <button className="modal-close" onClick={onClose} title="Close (Esc)">
+            <X size={16} />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="modal-body">
+        {/* Modal Scrollable Body */}
+        <div className="modal-scroll-body">
           {/* Section 1: Original Log Metadata */}
-          <div className="modal-section">
-            <h3 className="section-heading">
-              <FileText size={15} />
+          <div className="details-section">
+            <div className="section-label">
+              <FileText size={13} />
               <span>Original Log Attributes</span>
-            </h3>
-            <div className="metadata-grid">
-              <div className="meta-item">
-                <span className="meta-label">Timestamp</span>
-                <span className="meta-value font-mono">
-                  {new Date(log.timestamp).toLocaleString()} ({log.timestamp})
-                </span>
-              </div>
+            </div>
 
-              <div className="meta-item">
-                <span className="meta-label">Severity Level</span>
-                <span className="meta-value">
-                  <span className={`severity-pill ${getSeverityClass(log.severity)}`}>
+            <div className="attributes-grid">
+              <div className="attr-cell">
+                <span className="attr-key">Timestamp</span>
+                <span className="attr-val font-mono">{new Date(log.timestamp).toLocaleString()}</span>
+              </div>
+              <div className="attr-cell">
+                <span className="attr-key">Severity</span>
+                <span className="attr-val">
+                  <span className={`tag-badge ${getSeverityClass(log.severity)}`}>
                     {log.severity}
                   </span>
                 </span>
               </div>
-
-              <div className="meta-item">
-                <span className="meta-label">Originating Source</span>
-                <span className="meta-value font-mono code-pill">{log.source}</span>
+              <div className="attr-cell">
+                <span className="attr-key">Source Service</span>
+                <span className="attr-val font-mono source-tag">{log.source}</span>
               </div>
-
-              <div className="meta-item">
-                <span className="meta-label">Status Flag / Code</span>
-                <span className="meta-value font-mono code-pill">{log.status}</span>
+              <div className="attr-cell">
+                <span className="attr-key">Status</span>
+                <span className="attr-val font-mono source-tag">{log.status}</span>
               </div>
             </div>
 
-            {/* Message payload */}
-            <div className="message-container">
-              <div className="message-header">
-                <span>Log Payload / Message</span>
-                <button className="copy-btn" onClick={handleCopyMessage} title="Copy message">
-                  {copied ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+            {/* Log Message Code Block */}
+            <div className="code-block-container">
+              <div className="code-block-header">
+                <span>Message Payload</span>
+                <button className="copy-action-btn" onClick={handleCopyMessage}>
+                  {copied ? <Check size={12} className="text-green" /> : <Copy size={12} />}
                   <span>{copied ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
-              <pre className="message-pre">{log.message}</pre>
+              <pre className="code-block-pre">{log.message}</pre>
             </div>
           </div>
 
-          {/* Section 2: Deterministic Anomaly Detection */}
-          <div className="modal-section">
-            <h3 className="section-heading">
-              <ShieldAlert size={15} />
+          {/* Section 2: Deterministic Engine Evaluation */}
+          <div className="details-section">
+            <div className="section-label">
+              <ShieldAlert size={13} />
               <span>Deterministic Anomaly Engine Evaluation</span>
-            </h3>
+            </div>
 
-            <div className="detection-banner">
-              <div className="score-block">
-                <span className="score-number" style={{ color: scoreColor }}>
-                  {log.anomalyScore}
-                </span>
-                <span className="score-max">/ 100</span>
-                <div className="score-bar-bg">
+            <div className="scoring-card">
+              <div className="score-summary">
+                <div className="score-main">
+                  <span className={`score-digit ${scoreClass}`}>{log.anomalyScore}</span>
+                  <span className="score-total font-mono">/ 100</span>
+                </div>
+                <div className="score-track">
                   <div 
-                    className="score-bar-fill" 
-                    style={{ width: `${log.anomalyScore}%`, backgroundColor: scoreColor }}
+                    className={`score-progress ${scoreFillClass}`} 
+                    style={{ width: `${log.anomalyScore}%` }}
                   />
                 </div>
+                <span className="score-threshold-note">Threshold: 50 pts</span>
               </div>
 
-              <div className="status-block">
-                <span className="meta-label">Engine Classification</span>
+              <div className="classification-tag-col">
+                <span className="attr-key">Engine Verdict</span>
                 {log.isAnomaly ? (
-                  <span className="badge-pill badge-rose" style={{ fontSize: '0.85rem' }}>
-                    🚨 ANOMALY DETECTED (Score &ge; 50)
+                  <span className="tag-badge tag-anomaly">
+                    <ShieldAlert size={11} />
+                    <span>ANOMALY DETECTED (&ge; 50)</span>
                   </span>
                 ) : (
-                  <span className="badge-pill badge-emerald" style={{ fontSize: '0.85rem' }}>
-                    ✅ NORMAL OPERATIONAL EVENT
+                  <span className="tag-badge tag-normal">
+                    <CheckCircle2 size={11} />
+                    <span>NORMAL EVENT (&lt; 50)</span>
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Triggered Rule Reasons */}
-            <div className="reasons-box">
-              <span className="meta-label" style={{ marginBottom: '8px', display: 'block' }}>
-                Triggered Heuristic Rules & Weights:
-              </span>
+            {/* Triggered Rule Breakdown */}
+            <div className="rules-list-container">
+              <span className="rules-header-label">Triggered Heuristic Signals:</span>
               {log.anomalyReason && log.anomalyReason.length > 0 ? (
-                <ul className="reasons-list">
+                <ul className="rules-list">
                   {log.anomalyReason.map((reason, idx) => (
-                    <li key={idx} className="reason-item">
-                      <span className="reason-bullet">•</span>
+                    <li key={idx} className="rule-entry">
+                      <span className="rule-bullet">•</span>
                       <span>{reason}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-                  No anomaly triggers fired. Standard operational pattern within SLA.
+                <div className="rules-empty cell-muted">
+                  No anomaly heuristic weights triggered. Standard operational execution.
                 </div>
               )}
             </div>
           </div>
 
           {/* Section 3: Gemini AI Root Cause Explanation */}
-          <div className="modal-section" style={{ borderBottom: 'none' }}>
+          <div className="details-section" style={{ borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>
             <AiAnalysisSection
               log={log}
               onAnalyze={onAnalyze}

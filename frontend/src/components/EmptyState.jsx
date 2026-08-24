@@ -4,33 +4,33 @@ import { Database, SearchX, RotateCcw } from 'lucide-react';
 export default function EmptyState({ isFiltered, onSeed, onResetFilters, actionLoading }) {
   if (isFiltered) {
     return (
-      <div className="empty-state-card">
-        <div className="empty-icon-wrap">
-          <SearchX size={36} color="#94a3b8" />
+      <div className="empty-panel">
+        <div className="empty-icon-box">
+          <SearchX size={28} />
         </div>
-        <h3 className="empty-title">No Matching Logs Found</h3>
-        <p className="empty-desc">
-          No records match your selected filters and search query. Try broadening your criteria or resetting filters.
+        <h3 className="empty-heading">No matching logs found</h3>
+        <p className="empty-text">
+          No log entries match your active filter criteria. Try adjusting the search term or clearing filters.
         </p>
         <button className="btn btn-secondary" onClick={onResetFilters}>
-          <RotateCcw size={15} />
-          <span>Reset All Filters</span>
+          <RotateCcw size={13} />
+          <span>Reset Filters</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="empty-state-card">
-      <div className="empty-icon-wrap">
-        <Database size={36} color="#3b82f6" />
+    <div className="empty-panel">
+      <div className="empty-icon-box">
+        <Database size={28} />
       </div>
-      <h3 className="empty-title">No Logs Stored in SQLite</h3>
-      <p className="empty-desc">
-        The database is currently empty. Load the curated synthetic dataset (25 realistic enterprise logs with 5 intentional anomalies) to explore the system.
+      <h3 className="empty-heading">No logs found</h3>
+      <p className="empty-text">
+        Your log database is currently empty. Add logs manually or load the demo dataset to get started.
       </p>
       <button className="btn btn-primary" onClick={onSeed} disabled={actionLoading}>
-        <Database size={16} />
+        <Database size={14} />
         <span>{actionLoading ? 'Loading Demo Data...' : 'Load Demo Logs'}</span>
       </button>
     </div>

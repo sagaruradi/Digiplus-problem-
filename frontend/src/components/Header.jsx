@@ -4,8 +4,7 @@ import {
   Server, 
   RefreshCw, 
   Database, 
-  Trash2,
-  Cpu
+  Trash2 
 } from 'lucide-react';
 
 export default function Header({ 
@@ -20,38 +19,38 @@ export default function Header({
   const isHealthy = health?.status === 'healthy';
 
   return (
-    <header className="header">
-      <div className="header-left">
-        <div className="logo-badge">
-          <Activity size={26} />
+    <header className="app-header">
+      <div className="header-brand">
+        <div className="brand-icon">
+          <Activity size={22} />
         </div>
-        <div>
-          <div className="title-row">
-            <h1 className="app-title">Smart Log Analyzer</h1>
-            <span className="version-tag">DigiPlus ACOE</span>
-          </div>
-          <p className="app-subtitle">
+        <div className="brand-text">
+          <h1 className="brand-title">Smart Log Analyzer</h1>
+          <p className="brand-subtitle">
             Ingests microservice logs, detects anomalies using deterministic heuristic scoring, and generates AI root cause explanations on demand.
           </p>
         </div>
       </div>
 
-      <div className="header-actions">
-        {/* Health Status Indicator */}
-        <div className={`health-pill ${isHealthy ? 'health-ok' : 'health-err'}`} title="Backend Express & SQLite status">
-          <span className="status-dot"></span>
-          <Server size={14} />
+      <div className="header-toolbar">
+        {/* Backend Connectivity Status */}
+        <div 
+          className={`status-indicator ${isHealthy ? 'status-online' : 'status-offline'}`}
+          title="Backend Express & SQLite WAL status"
+        >
+          <span className="indicator-dot"></span>
+          <Server size={13} />
           <span>{isHealthy ? 'Backend Connected' : 'Disconnected'}</span>
         </div>
 
-        {/* Action Buttons */}
+        {/* Actions Hierarchy */}
         <button 
           className="btn btn-secondary" 
           onClick={onRefresh}
           disabled={loading || actionLoading}
-          title="Refresh logs and statistics"
+          title="Refresh logs and metrics"
         >
-          <RefreshCw size={15} className={loading ? 'spin' : ''} />
+          <RefreshCw size={14} className={loading ? 'spin' : ''} />
           <span>Refresh</span>
         </button>
 
@@ -59,20 +58,20 @@ export default function Header({
           className="btn btn-primary" 
           onClick={onSeed}
           disabled={loading || actionLoading}
-          title="Seed realistic synthetic dataset with 25 logs and 5 anomalies"
+          title="Load 25 synthetic enterprise logs with 5 anomalies"
         >
-          <Database size={15} />
-          <span>{actionLoading ? 'Loading Demo...' : 'Load Demo Logs'}</span>
+          <Database size={14} />
+          <span>{actionLoading ? 'Loading...' : 'Load Demo Logs'}</span>
         </button>
 
         {totalLogs > 0 && (
           <button 
-            className="btn btn-ghost" 
+            className="btn btn-ghost-danger" 
             onClick={onClear}
             disabled={loading || actionLoading}
             title="Clear all stored logs"
           >
-            <Trash2 size={15} />
+            <Trash2 size={14} />
           </button>
         )}
       </div>

@@ -1,12 +1,11 @@
 import React from 'react';
 import { 
   ShieldAlert, 
-  CheckCircle, 
+  CheckCircle2, 
   Sparkles, 
   ChevronLeft, 
   ChevronRight, 
-  ExternalLink,
-  ChevronDown
+  ArrowRight 
 } from 'lucide-react';
 import EmptyState from './EmptyState.jsx';
 
@@ -42,35 +41,35 @@ export default function LogTable({
 
   const getSeverityClass = (sev) => {
     switch (sev?.toUpperCase()) {
-      case 'CRITICAL': return 'sev-critical';
-      case 'FATAL': return 'sev-fatal';
-      case 'ERROR': return 'sev-error';
-      case 'WARN': return 'sev-warn';
-      default: return 'sev-info';
+      case 'CRITICAL': return 'badge-sev-critical';
+      case 'FATAL': return 'badge-sev-fatal';
+      case 'ERROR': return 'badge-sev-error';
+      case 'WARN': case 'WARNING': return 'badge-sev-warn';
+      default: return 'badge-sev-info';
     }
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 50) return '#f43f5e';
-    if (score >= 25) return '#f59e0b';
-    return '#10b981';
+  const getScoreClass = (score) => {
+    if (score >= 50) return 'score-val-red';
+    if (score >= 25) return 'score-val-amber';
+    return 'score-val-green';
   };
 
   return (
-    <div className="table-container-card">
-      <div className="table-wrapper">
-        <table className="log-table">
+    <div className="table-card">
+      <div className="table-responsive">
+        <table className="console-table">
           <thead>
             <tr>
-              <th>Timestamp</th>
-              <th>Source</th>
+              <th style={{ width: '110px' }}>Timestamp</th>
+              <th style={{ width: '130px' }}>Source</th>
               <th>Event Category</th>
-              <th>Severity</th>
-              <th>Status</th>
-              <th>Score</th>
-              <th>Classification</th>
-              <th>AI Diagnosis</th>
-              <th style={{ textAlign: 'right' }}>Action</th>
+              <th style={{ width: '90px' }}>Severity</th>
+              <th style={{ width: '70px' }}>Status</th>
+              <th style={{ width: '60px' }}>Score</th>
+              <th style={{ width: '110px' }}>Classification</th>
+              <th style={{ width: '120px' }}>AI Diagnosis</th>
+              <th style={{ width: '80px', textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -81,95 +80,88 @@ export default function LogTable({
               return (
                 <tr 
                   key={log.id} 
-                  className={`table-row ${isAnomaly ? 'row-anomaly' : 'row-normal'}`}
+                  className={`console-row ${isAnomaly ? 'row-is-anomaly' : 'row-is-normal'}`}
                   onClick={() => onSelectLog(log)}
                 >
                   {/* Timestamp */}
-                  <td className="font-mono text-muted" style={{ fontSize: '0.78rem' }}>
-                    {new Date(log.timestamp).toLocaleTimeString()}
+                  <td className="cell-mono cell-muted">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </td>
 
                   {/* Source */}
                   <td>
-                    <span className="code-pill font-mono">{log.source}</span>
+                    <span className="source-tag font-mono">{log.source}</span>
                   </td>
 
                   {/* Event Category */}
-                  <td style={{ fontWeight: 600, color: '#f1f5f9' }}>
+                  <td className="cell-event">
                     {log.eventType}
                   </td>
 
                   {/* Severity */}
                   <td>
-                    <span className={`severity-pill ${getSeverityClass(log.severity)}`}>
+                    <span className={`tag-badge ${getSeverityClass(log.severity)}`}>
                       {log.severity}
                     </span>
                   </td>
 
                   {/* Status */}
-                  <td className="font-mono" style={{ fontSize: '0.8rem' }}>
+                  <td className="cell-mono" style={{ fontSize: '0.8rem' }}>
                     {log.status}
                   </td>
 
                   {/* Anomaly Score */}
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span 
-                        className="font-mono" 
-                        style={{ fontWeight: 700, color: getScoreColor(log.anomalyScore) }}
-                      >
-                        {log.anomalyScore}
-                      </span>
-                    </div>
+                    <span className={`font-mono font-bold ${getScoreClass(log.anomalyScore)}`}>
+                      {log.anomalyScore}
+                    </span>
                   </td>
 
-                  {/* Classification Badge */}
+                  {/* Classification */}
                   <td>
                     {isAnomaly ? (
-                      <span className="badge-pill badge-rose" style={{ fontSize: '0.7rem' }}>
-                        <ShieldAlert size={12} />
+                      <span className="tag-badge tag-anomaly">
+                        <ShieldAlert size={11} />
                         <span>ANOMALY</span>
                       </span>
                     ) : (
-                      <span className="badge-pill badge-emerald" style={{ fontSize: '0.7rem' }}>
-                        <CheckCircle size={12} />
+                      <span className="tag-badge tag-normal">
+                        <CheckCircle2 size={11} />
                         <span>NORMAL</span>
                       </span>
                     )}
                   </td>
 
-                  {/* AI Status */}
+                  {/* AI Diagnosis */}
                   <td>
                     {isAnomaly ? (
                       hasAiAnalysis ? (
-                        <span className="badge-pill badge-purple" title="AI explanation generated and saved">
-                          <Sparkles size={12} />
+                        <span className="tag-badge tag-ai-done" title="Root cause analysis generated and saved">
+                          <Sparkles size={11} />
                           <span>Explained</span>
                         </span>
                       ) : (
-                        <span className="badge-pill badge-muted" title="Click to analyze with Gemini">
+                        <span className="tag-badge tag-ai-pending" title="Click details to analyze with Gemini">
                           <span>Unanalyzed</span>
                         </span>
                       )
                     ) : (
-                      <span className="text-muted" style={{ fontSize: '0.75rem' }}>
-                        —
-                      </span>
+                      <span className="cell-muted">—</span>
                     )}
                   </td>
 
-                  {/* Action Button */}
+                  {/* Action */}
                   <td style={{ textAlign: 'right' }}>
                     <button 
-                      className="btn btn-ghost row-action-btn"
+                      className="btn-table-action"
                       onClick={(e) => {
                         e.stopPropagation();
                         onSelectLog(log);
                       }}
-                      title="View full log details"
+                      title="View log details and analysis"
                     >
                       <span>Details</span>
-                      <ExternalLink size={13} />
+                      <ArrowRight size={11} />
                     </button>
                   </td>
                 </tr>
@@ -179,21 +171,19 @@ export default function LogTable({
         </table>
       </div>
 
-      {/* Pagination Footer */}
-      <div className="table-pagination-footer">
-        <div className="pagination-info">
-          Showing <strong>{startItem}</strong> - <strong>{endItem}</strong> of <strong>{total}</strong> entries
+      {/* Table Pagination Footer */}
+      <div className="table-footer">
+        <div className="footer-count">
+          Showing <span>{startItem}–{endItem}</span> of <span>{total}</span> entries
         </div>
 
-        <div className="pagination-controls">
-          {/* Limit selector */}
-          <div className="limit-selector">
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Per page:</span>
+        <div className="footer-nav">
+          <div className="limit-inline">
+            <span className="cell-muted">Rows:</span>
             <select
               value={limit}
               onChange={(e) => onChangeLimit(Number(e.target.value))}
-              className="filter-select"
-              style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+              className="select-field-compact"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -201,28 +191,25 @@ export default function LogTable({
             </select>
           </div>
 
-          {/* Page buttons */}
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <div className="pagination-arrows">
             <button
-              className="btn btn-secondary page-btn"
+              className="btn-arrow"
               disabled={currentPage <= 1 || loading}
               onClick={() => onChangePage(currentPage - 1)}
               title="Previous page"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={14} />
             </button>
-
-            <span className="page-indicator">
-              Page {currentPage} of {totalPages}
+            <span className="page-text">
+              {currentPage} / {totalPages}
             </span>
-
             <button
-              className="btn btn-secondary page-btn"
+              className="btn-arrow"
               disabled={currentPage >= totalPages || loading}
               onClick={() => onChangePage(currentPage + 1)}
               title="Next page"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>

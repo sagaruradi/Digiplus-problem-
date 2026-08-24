@@ -3,8 +3,7 @@ import {
   Layers, 
   ShieldAlert, 
   AlertOctagon, 
-  CheckCircle2,
-  Sparkles
+  CheckCircle2 
 } from 'lucide-react';
 
 export default function StatsCards({ stats, onFilterAnomaly, activeFilter }) {
@@ -17,66 +16,58 @@ export default function StatsCards({ stats, onFilterAnomaly, activeFilter }) {
   const criticalCount = (stats?.bySeverity?.CRITICAL || 0) + (stats?.bySeverity?.FATAL || 0);
 
   return (
-    <div className="stats-grid">
-      {/* 1. Total Logs */}
+    <div className="metrics-grid">
+      {/* 1. Total Ingested */}
       <div 
-        className={`stat-card ${activeFilter === '' ? 'stat-card-active' : ''}`}
+        className={`metric-card ${activeFilter === '' ? 'metric-card-selected' : ''}`}
         onClick={() => onFilterAnomaly('')}
       >
-        <div className="stat-header">
-          <span className="stat-label">Total Ingested</span>
-          <div className="stat-icon stat-icon-blue">
-            <Layers size={18} />
-          </div>
+        <div className="metric-header">
+          <span className="metric-title">Total Ingested</span>
+          <Layers size={15} className="metric-icon metric-icon-blue" />
         </div>
-        <div className="stat-value text-blue">{total}</div>
-        <div className="stat-footer">Persisted in SQLite (WAL)</div>
+        <div className="metric-value text-blue">{total}</div>
+        <div className="metric-meta">SQLite WAL storage</div>
       </div>
 
-      {/* 2. Total Anomalies */}
+      {/* 2. Detected Anomalies */}
       <div 
-        className={`stat-card stat-card-clickable ${activeFilter === 'true' ? 'stat-card-active' : ''}`}
+        className={`metric-card metric-card-interactive ${activeFilter === 'true' ? 'metric-card-selected' : ''}`}
         onClick={() => onFilterAnomaly('true')}
       >
-        <div className="stat-header">
-          <span className="stat-label">Detected Anomalies</span>
-          <div className="stat-icon stat-icon-rose">
-            <ShieldAlert size={18} />
-          </div>
+        <div className="metric-header">
+          <span className="metric-title">Detected Anomalies</span>
+          <ShieldAlert size={15} className="metric-icon metric-icon-red" />
         </div>
-        <div className="stat-value text-rose">{anomalies}</div>
-        <div className="stat-footer">
-          <span className="badge-pill badge-rose">{rate}% rate</span>
-          <span style={{ marginLeft: '6px' }}>by rule engine</span>
+        <div className="metric-value text-red">{anomalies}</div>
+        <div className="metric-meta">
+          <span className="meta-tag meta-tag-red">{rate}% rate</span>
+          <span className="meta-sub">Score &ge; 50</span>
         </div>
       </div>
 
-      {/* 3. Critical / Fatal */}
-      <div className="stat-card">
-        <div className="stat-header">
-          <span className="stat-label">Critical & Fatal</span>
-          <div className="stat-icon stat-icon-amber">
-            <AlertOctagon size={18} />
-          </div>
+      {/* 3. Critical & Fatal */}
+      <div className="metric-card">
+        <div className="metric-header">
+          <span className="metric-title">Critical & Fatal</span>
+          <AlertOctagon size={15} className="metric-icon metric-icon-amber" />
         </div>
-        <div className="stat-value text-amber">{criticalCount}</div>
-        <div className="stat-footer">High-severity incidents</div>
+        <div className="metric-value text-amber">{criticalCount}</div>
+        <div className="metric-meta">High-severity alerts</div>
       </div>
 
-      {/* 4. Normal Logs */}
+      {/* 4. Normal Operations */}
       <div 
-        className={`stat-card stat-card-clickable ${activeFilter === 'false' ? 'stat-card-active' : ''}`}
+        className={`metric-card metric-card-interactive ${activeFilter === 'false' ? 'metric-card-selected' : ''}`}
         onClick={() => onFilterAnomaly('false')}
       >
-        <div className="stat-header">
-          <span className="stat-label">Normal Operations</span>
-          <div className="stat-icon stat-icon-emerald">
-            <CheckCircle2 size={18} />
-          </div>
+        <div className="metric-header">
+          <span className="metric-title">Normal Operations</span>
+          <CheckCircle2 size={15} className="metric-icon metric-icon-green" />
         </div>
-        <div className="stat-value text-emerald">{normal}</div>
-        <div className="stat-footer">
-          <span>{analyzed} explained by Gemini</span>
+        <div className="metric-value text-green">{normal}</div>
+        <div className="metric-meta">
+          <span className="meta-sub">{analyzed} with AI explanation</span>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Filter, RotateCcw } from 'lucide-react';
+import { Search, X, RotateCcw } from 'lucide-react';
 
 const SEVERITIES = ['INFO', 'WARN', 'ERROR', 'CRITICAL', 'FATAL'];
 
@@ -16,38 +16,38 @@ export default function LogFilters({
     filters.search !== '';
 
   return (
-    <div className="filters-container">
-      {/* 1. Status Filter Tabs (All / Anomalies / Normal) */}
-      <div className="status-tabs">
+    <div className="filter-bar">
+      {/* 1. Status Filter Segmented Controls */}
+      <div className="segmented-control">
         <button
-          className={`tab-btn ${filters.isAnomaly === '' ? 'tab-btn-active' : ''}`}
+          className={`segment-btn ${filters.isAnomaly === '' ? 'segment-active' : ''}`}
           onClick={() => onChangeFilter('isAnomaly', '')}
         >
           All Logs
         </button>
         <button
-          className={`tab-btn tab-btn-danger ${filters.isAnomaly === 'true' ? 'tab-btn-active-danger' : ''}`}
+          className={`segment-btn segment-btn-anomaly ${filters.isAnomaly === 'true' ? 'segment-active-anomaly' : ''}`}
           onClick={() => onChangeFilter('isAnomaly', 'true')}
         >
           Anomalies Only
         </button>
         <button
-          className={`tab-btn tab-btn-success ${filters.isAnomaly === 'false' ? 'tab-btn-active-success' : ''}`}
+          className={`segment-btn segment-btn-normal ${filters.isAnomaly === 'false' ? 'segment-active-normal' : ''}`}
           onClick={() => onChangeFilter('isAnomaly', 'false')}
         >
           Normal Only
         </button>
       </div>
 
-      {/* 2. Controls Group (Search, Severity, Source, Reset) */}
-      <div className="filter-controls-group">
+      {/* 2. Right Controls Group (Search, Severity, Source, Reset) */}
+      <div className="filter-tools">
         {/* Search Bar */}
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
+        <div className="search-field">
+          <Search size={14} className="search-field-icon" />
           <input
             type="text"
-            className="search-input"
-            placeholder="Search message, source, or event..."
+            className="search-field-input"
+            placeholder="Search logs, sources, events..."
             value={filters.search}
             onChange={(e) => onChangeFilter('search', e.target.value)}
           />
@@ -57,52 +57,47 @@ export default function LogFilters({
               onClick={() => onChangeFilter('search', '')}
               title="Clear search"
             >
-              <X size={14} />
+              <X size={12} />
             </button>
           )}
         </div>
 
-        {/* Severity Select */}
-        <div className="select-wrapper">
-          <select
-            className="filter-select"
-            value={filters.severity}
-            onChange={(e) => onChangeFilter('severity', e.target.value)}
-          >
-            <option value="">All Severities</option>
-            {SEVERITIES.map((sev) => (
-              <option key={sev} value={sev}>
-                {sev}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Severity Dropdown */}
+        <select
+          className="select-field"
+          value={filters.severity}
+          onChange={(e) => onChangeFilter('severity', e.target.value)}
+        >
+          <option value="">All Severities</option>
+          {SEVERITIES.map((sev) => (
+            <option key={sev} value={sev}>
+              {sev}
+            </option>
+          ))}
+        </select>
 
-        {/* Source Select */}
-        <div className="select-wrapper">
-          <select
-            className="filter-select"
-            value={filters.source}
-            onChange={(e) => onChangeFilter('source', e.target.value)}
-          >
-            <option value="">All Sources</option>
-            {availableSources.map((src) => (
-              <option key={src} value={src}>
-                {src}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Source Dropdown */}
+        <select
+          className="select-field"
+          value={filters.source}
+          onChange={(e) => onChangeFilter('source', e.target.value)}
+        >
+          <option value="">All Sources</option>
+          {availableSources.map((src) => (
+            <option key={src} value={src}>
+              {src}
+            </option>
+          ))}
+        </select>
 
-        {/* Reset Filters */}
+        {/* Reset Filter Button */}
         {isFiltered && (
           <button 
-            className="btn btn-ghost" 
+            className="btn btn-ghost-compact" 
             onClick={onResetFilters} 
-            title="Reset all filters"
-            style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
+            title="Reset active filters"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={12} />
             <span>Reset</span>
           </button>
         )}
