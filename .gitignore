@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+**/node_modules/
+package-lock.json
+**/package-lock.json
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# SQLite Databases & WAL runtime files
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-journal
+**/src/db/*.sqlite
+**/src/db/*.sqlite-wal
+**/src/db/*.sqlite-shm
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+
+# Logs & debug traces
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor & IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db

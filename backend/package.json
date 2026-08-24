@@ -1,0 +1,28 @@
+{
+  "name": "smart-log-analyzer-backend",
+  "version": "1.0.0",
+  "description": "Backend for Smart Log Analyzer & Anomaly Detector",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node tests/detector.test.js && node tests/api.test.js && node tests/gemini.test.js"
+  },
+  "keywords": [
+    "log-analyzer",
+    "anomaly-detection",
+    "sqlite",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.18.0",
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "uuid": "^11.1.0"
+  }
+}

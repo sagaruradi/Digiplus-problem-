@@ -1,0 +1,202 @@
+[
+  {
+    "timestamp": "2026-08-24T08:00:10.120Z",
+    "eventType": "AUTH_LOGIN",
+    "severity": "INFO",
+    "source": "auth-service",
+    "message": "User session initiated successfully for account user_9821 via OAuth2 provider",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:01:15.340Z",
+    "eventType": "API_REQUEST",
+    "severity": "INFO",
+    "source": "api-gateway",
+    "message": "GET /api/v1/products/catalog completed in 34ms",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:02:22.510Z",
+    "eventType": "CACHE_FETCH",
+    "severity": "INFO",
+    "source": "cache-service",
+    "message": "Cache key 'prod_catalog_featured' served from Redis cluster node-01",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:03:05.890Z",
+    "eventType": "USER_PROFILE",
+    "severity": "INFO",
+    "source": "user-service",
+    "message": "Updated notification preferences for user_4412",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:04:12.440Z",
+    "eventType": "ORDER_CREATE",
+    "severity": "INFO",
+    "source": "order-service",
+    "message": "Order ORD-77821 initialized for user_9821 with total $142.50",
+    "status": "201"
+  },
+  {
+    "timestamp": "2026-08-24T08:04:18.910Z",
+    "eventType": "PAYMENT_PROCESS",
+    "severity": "INFO",
+    "source": "payment-gateway",
+    "message": "Payment token authorization approved by processor for order ORD-77821",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:05:00.000Z",
+    "eventType": "SYSTEM_HEALTH",
+    "severity": "INFO",
+    "source": "monitoring-daemon",
+    "message": "Cluster health check completed: 18/18 microservices responding within SLA",
+    "status": "HEALTHY"
+  },
+  {
+    "timestamp": "2026-08-24T08:06:14.220Z",
+    "eventType": "DB_QUERY",
+    "severity": "WARN",
+    "source": "database-cluster",
+    "message": "Query latency warning: SELECT on table 'inventory_items' took 385ms (threshold: 300ms)",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:07:30.150Z",
+    "eventType": "AUTH_LOGOUT",
+    "severity": "INFO",
+    "source": "auth-service",
+    "message": "User session user_1102 terminated normally",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:08:45.670Z",
+    "eventType": "NOTIFICATION_DISPATCH",
+    "severity": "INFO",
+    "source": "notification-service",
+    "message": "Dispatched order confirmation email to customer via SES relay",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:09:12.000Z",
+    "eventType": "DB_TRANSACTION",
+    "severity": "CRITICAL",
+    "source": "database-cluster",
+    "message": "Transaction T-8924 failed: Deadlock detected between process PID-4412 and PID-7781 on resource idx_ledger_balance",
+    "status": "DEADLOCK"
+  },
+  {
+    "timestamp": "2026-08-24T08:10:02.310Z",
+    "eventType": "API_REQUEST",
+    "severity": "INFO",
+    "source": "api-gateway",
+    "message": "GET /api/v1/user/cart completed in 22ms",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:11:15.880Z",
+    "eventType": "INVENTORY_SYNC",
+    "severity": "INFO",
+    "source": "inventory-service",
+    "message": "Batch inventory synchronization completed for warehouse WH-North",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:12:40.100Z",
+    "eventType": "AUTH_SECURITY_ALERT",
+    "severity": "ERROR",
+    "source": "auth-service",
+    "message": "Repeated failed login burst: 45 unauthorized credential stuffing attempts detected from IP 198.51.100.42 for user admin",
+    "status": "401"
+  },
+  {
+    "timestamp": "2026-08-24T08:13:25.750Z",
+    "eventType": "API_REQUEST",
+    "severity": "INFO",
+    "source": "api-gateway",
+    "message": "POST /api/v1/search query='smart watch' returned 14 results",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:14:10.500Z",
+    "eventType": "FILE_STORAGE",
+    "severity": "INFO",
+    "source": "storage-service",
+    "message": "Uploaded invoice PDF receipt_ORD-77821.pdf to S3 bucket",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:15:33.200Z",
+    "eventType": "PAYMENT_PROCESS",
+    "severity": "CRITICAL",
+    "source": "payment-gateway",
+    "message": "Upstream timeout: Gateway timeout 504 from banking partner switch, circuit breaker opened after 10 consecutive timeouts",
+    "status": "504"
+  },
+  {
+    "timestamp": "2026-08-24T08:16:11.890Z",
+    "eventType": "SYSTEM_HEALTH",
+    "severity": "INFO",
+    "source": "monitoring-daemon",
+    "message": "Node metrics collected: CPU load 28%, Memory usage 42%",
+    "status": "HEALTHY"
+  },
+  {
+    "timestamp": "2026-08-24T08:17:05.120Z",
+    "eventType": "ORDER_STATUS",
+    "severity": "INFO",
+    "source": "order-service",
+    "message": "Order ORD-77819 status transitioned from PROCESSING to SHIPPED",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:18:44.900Z",
+    "eventType": "BACKGROUND_JOB",
+    "severity": "FATAL",
+    "source": "worker-service",
+    "message": "Fatal runtime crash: Heap out of memory allocation failure in background analytics worker job J-304",
+    "status": "CRASH"
+  },
+  {
+    "timestamp": "2026-08-24T08:19:20.400Z",
+    "eventType": "API_REQUEST",
+    "severity": "INFO",
+    "source": "api-gateway",
+    "message": "GET /api/v1/categories completed in 18ms",
+    "status": "200"
+  },
+  {
+    "timestamp": "2026-08-24T08:20:00.600Z",
+    "eventType": "CACHE_PURGE",
+    "severity": "INFO",
+    "source": "cache-service",
+    "message": "Invalidated expired keys in namespace 'session_tokens'",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:21:15.250Z",
+    "eventType": "SECURITY_WAF",
+    "severity": "ERROR",
+    "source": "api-gateway",
+    "message": "Security alert: Potential SQL injection attack blocked in query parameter 'accountId' with suspicious payload UNION SELECT",
+    "status": "403"
+  },
+  {
+    "timestamp": "2026-08-24T08:22:10.800Z",
+    "eventType": "DB_BACKUP",
+    "severity": "INFO",
+    "source": "database-cluster",
+    "message": "Scheduled hourly incremental WAL snapshot completed in 1.4s",
+    "status": "SUCCESS"
+  },
+  {
+    "timestamp": "2026-08-24T08:23:45.300Z",
+    "eventType": "SYSTEM_HEALTH",
+    "severity": "INFO",
+    "source": "monitoring-daemon",
+    "message": "All ingress load balancers reporting normal latency and zero dropped packets",
+    "status": "HEALTHY"
+  }
+]
