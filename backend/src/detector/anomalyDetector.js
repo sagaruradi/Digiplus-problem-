@@ -5,6 +5,20 @@
  * Under NO circumstances does this use AI or Gemini API calls.
  */
 
+// Strict IPv4 extraction regex
+const IPV4_REGEX = /\b(?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\b/;
+
+/**
+ * Extracts the first valid IPv4 address found in a string.
+ * @param {string} text 
+ * @returns {string|null}
+ */
+export function extractIpAddress(text) {
+  if (!text || typeof text !== 'string') return null;
+  const match = text.match(IPV4_REGEX);
+  return match ? match[0] : null;
+}
+
 // Categorized keyword heuristics for explainable signals and deduplication
 const KEYWORD_CATEGORIES = [
   {
@@ -69,6 +83,7 @@ const KEYWORD_CATEGORIES = [
  * - Auth/Rate-limit 401/403/429: +20
  * - Status TIMEOUT/FAILED/DEADLOCK/CRASH: +25
  * - High-Risk Keyword Categories (deduplicated): +20 to +35
+ * - Cumulative Repeat IP Offender Signals: +15 (2-4 failures), +30 (5-9 failures), +50 (>=10 failures)
  * 
  * @param {Object} log - The log entry object
  * @param {string} log.severity - Severity level (INFO, WARN, ERROR, CRITICAL, FATAL)
@@ -77,9 +92,12 @@ const KEYWORD_CATEGORIES = [
  * @param {string} [log.eventType] - The category/type of the event
  * @param {string} [log.source] - The originating service
  * @param {number} [threshold=50] - Threshold score (0-100) to flag as anomaly
+ * @param {Object} [context={}] - Optional stateful context (e.g. recent failure counts for repeat IP lookups)
+ * @param {number} [context.recentFailureCount] - Number of previous failure events from same IP within window
+ * @param {string} [context.ipAddress] - The extracted IP address
  * @returns {{ isAnomaly: boolean, score: number, reasons: string[] }}
  */
-export function detectAnomaly(log, threshold = 50) {
+export function detectAnomaly(log, threshold = 50, context = {}) {
   let score = 0;
   const reasons = [];
 
@@ -139,7 +157,24 @@ export function detectAnomaly(log, threshold = 50) {
     }
   }
 
-  // 4. Normalization and Decision
+  // 4. Cumulative Repeat Offender IP Evaluation (if historical failure count provided in context)
+  const recentFailures = context?.recentFailureCount || 0;
+  const targetIp = context?.ipAddress || extractIpAddress(message) || extractIpAddress(log.source);
+
+  if (recentFailures > 0 && targetIp) {
+    if (recentFailures >= 10) {
+      score += 50;
+      reasons.push(`Repeat offender signal: Sustained assault (${recentFailures} recent failures) from IP ${targetIp} (+50)`);
+    } else if (recentFailures >= 5) {
+      score += 30;
+      reasons.push(`Repeat offender signal: High-frequency attack (${recentFailures} recent failures) from IP ${targetIp} (+30)`);
+    } else if (recentFailures >= 2) {
+      score += 15;
+      reasons.push(`Repeat offender signal: ${recentFailures} recent failure incidents from IP ${targetIp} (+15)`);
+    }
+  }
+
+  // 5. Normalization and Decision
   const normalizedScore = Math.min(100, Math.max(0, score));
   const isAnomaly = normalizedScore >= threshold;
 
@@ -156,5 +191,6 @@ export function detectAnomaly(log, threshold = 50) {
 }
 
 export default {
-  detectAnomaly
+  detectAnomaly,
+  extractIpAddress
 };

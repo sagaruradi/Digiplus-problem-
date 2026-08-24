@@ -199,6 +199,12 @@ Implemented in [`backend/src/detector/anomalyDetector.js`](backend/src/detector/
 - **`network_connectivity`** (`connection refused`, `upstream timeout`, `socket hang up`): **+20**
 - **`circuit_breaker`** (`circuit breaker opened`, `circuit breaker tripped`): **+25**
 
+### Repeat IP Offender Cumulative Scoring (Database Lookups)
+When a log originates from or contains an IP address, the system queries SQLite for recent failure events (`401`, `403`, `429`, `5xx`, `TIMEOUT`, `FAILED`, or flagged anomalies) within a 15-minute rolling window:
+- **$2 - 4$ prior failures**: **+15 points** (*"Repeat offender: 3 recent failure incidents from IP 192.168.1.105 (+15)"*)
+- **$5 - 9$ prior failures**: **+30 points** (*"Repeat offender: High-frequency attack (7 recent failures) from IP 192.168.1.105 (+30)"*)
+- **$\ge 10$ prior failures**: **+50 points** (*"Repeat offender: Sustained assault (12 recent failures) from IP 192.168.1.105 (+50)"*)
+
 **Default Threshold**: `50` (Score $\ge 50 \implies \text{isAnomaly} = \text{true}$).
 
 ---

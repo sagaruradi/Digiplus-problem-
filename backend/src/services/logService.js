@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from '../db/database.js';
-import { detectAnomaly } from '../detector/anomalyDetector.js';
+import { detectAnomaly, extractIpAddress } from '../detector/anomalyDetector.js';
 import { validateLog, validateLogBatch } from '../validators/logValidator.js';
 import { config } from '../config/index.js';
 import geminiService from './geminiService.js';
@@ -37,6 +37,37 @@ const updateAiAnalysisStmt = db.prepare(`
 const selectByIdStmt = db.prepare(`SELECT * FROM logs WHERE id = ?`);
 const deleteByIdStmt = db.prepare(`DELETE FROM logs WHERE id = ?`);
 const clearAllStmt = db.prepare(`DELETE FROM logs`);
+
+// Prepared statement to count recent failures/anomalies associated with an IP
+const countRecentIpFailuresStmt = db.prepare(`
+  SELECT COUNT(*) as count 
+  FROM logs 
+  WHERE (message LIKE ? OR source LIKE ?)
+    AND (
+      status IN ('401', '403', '429', '500', '502', '503', '504', 'FAILED', 'FAILURE', 'TIMEOUT', 'DEADLOCK', 'CRASH')
+      OR isAnomaly = 1
+    )
+    AND timestamp >= datetime(?, '-' || ? || ' minutes')
+`);
+
+/**
+ * Counts recent failures or anomalies originating from a specific IP address within lookback window.
+ * @param {string} ipAddress
+ * @param {string} [currentTimestamp]
+ * @param {number} [lookbackMinutes=15]
+ * @returns {number}
+ */
+export function getRecentIpFailureCount(ipAddress, currentTimestamp = new Date().toISOString(), lookbackMinutes = 15) {
+  if (!ipAddress) return 0;
+  try {
+    const pattern = `%${ipAddress}%`;
+    const result = countRecentIpFailuresStmt.get(pattern, pattern, currentTimestamp, lookbackMinutes);
+    return result ? Number(result.count) : 0;
+  } catch (err) {
+    console.error('Error querying recent IP failure count:', err);
+    return 0;
+  }
+}
 
 /**
  * Normalizes log output format (e.g. deserializing anomalyReason JSON and converting isAnomaly to boolean).
@@ -82,10 +113,20 @@ export function createLog(logData) {
     throw error;
   }
 
-  // 2. Anomaly Detection (Rule-based deterministic algorithm)
-  const anomalyResult = detectAnomaly(logData, config.anomalyThreshold);
+  // 2. IP Offender Context Lookup
+  const targetIp = extractIpAddress(logData.message) || extractIpAddress(logData.source);
+  let recentFailureCount = 0;
+  if (targetIp) {
+    recentFailureCount = getRecentIpFailureCount(targetIp, logData.timestamp, 15);
+  }
 
-  // 3. Prepare Record
+  // 3. Anomaly Detection (Rule-based deterministic algorithm with cumulative IP context)
+  const anomalyResult = detectAnomaly(logData, config.anomalyThreshold, {
+    ipAddress: targetIp,
+    recentFailureCount
+  });
+
+  // 4. Prepare Record
   const newRecord = {
     id: logData.id || uuidv4(),
     timestamp: logData.timestamp,
@@ -104,7 +145,7 @@ export function createLog(logData) {
     aiGeneratedAt: null
   };
 
-  // 4. Persistence
+  // 5. Persistence
   insertStmt.run(newRecord);
 
   return formatLogRecord(newRecord);
@@ -127,11 +168,37 @@ export function importLogs(logsArray) {
   const insertMany = db.transaction((logs) => {
     let anomalyCount = 0;
     const insertedLogs = [];
+    const batchIpCounts = new Map();
 
     for (const log of logs) {
-      const anomalyResult = detectAnomaly(log, config.anomalyThreshold);
+      const targetIp = extractIpAddress(log.message) || extractIpAddress(log.source);
+      let recentFailureCount = 0;
+      if (targetIp) {
+        const dbCount = getRecentIpFailureCount(targetIp, log.timestamp, 15);
+        const inBatchCount = batchIpCounts.get(targetIp) || 0;
+        recentFailureCount = dbCount + inBatchCount;
+      }
+
+      const anomalyResult = detectAnomaly(log, config.anomalyThreshold, {
+        ipAddress: targetIp,
+        recentFailureCount
+      });
+
       if (anomalyResult.isAnomaly) {
         anomalyCount++;
+      }
+
+      // If this log was an auth failure or error, track in-batch count
+      const statusStr = String(log.status || '').toUpperCase().trim();
+      const numStatus = parseInt(statusStr, 10);
+      const isFail = 
+        (numStatus >= 500 && numStatus <= 599) || 
+        [401, 403, 429].includes(numStatus) || 
+        ['TIMEOUT', 'TIMED_OUT', 'FAILED', 'FAILURE', 'DEADLOCK', 'CRASH'].includes(statusStr) ||
+        anomalyResult.isAnomaly;
+      
+      if (targetIp && isFail) {
+        batchIpCounts.set(targetIp, (batchIpCounts.get(targetIp) || 0) + 1);
       }
 
       const record = {
@@ -179,19 +246,19 @@ export function getLogs(queryParams = {}) {
     limit = 50,
     offset = 0,
     sortBy = 'timestamp',
-    sortOrder = 'DESC'
+    order = 'DESC'
   } = queryParams;
 
   const conditions = [];
   const params = {};
 
-  if (isAnomaly !== undefined && isAnomaly !== '') {
+  if (isAnomaly !== undefined && isAnomaly !== null && isAnomaly !== '') {
     conditions.push('isAnomaly = @isAnomaly');
-    params.isAnomaly = (isAnomaly === 'true' || isAnomaly === true || isAnomaly === '1' || isAnomaly === 1) ? 1 : 0;
+    params.isAnomaly = (isAnomaly === true || isAnomaly === 'true' || isAnomaly === 1 || isAnomaly === '1') ? 1 : 0;
   }
 
   if (severity) {
-    conditions.push('UPPER(severity) = @severity');
+    conditions.push('severity = @severity');
     params.severity = severity.toUpperCase().trim();
   }
 
@@ -206,92 +273,55 @@ export function getLogs(queryParams = {}) {
   }
 
   if (search) {
-    conditions.push('(message LIKE @search OR source LIKE @search OR eventType LIKE @search)');
+    conditions.push('(message LIKE @search OR eventType LIKE @search OR source LIKE @search)');
     params.search = `%${search.trim()}%`;
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   
-  // Safe sorting columns
-  const allowedSortCols = ['timestamp', 'severity', 'isAnomaly', 'anomalyScore', 'createdAt', 'source', 'eventType'];
-  const safeSortBy = allowedSortCols.includes(sortBy) ? sortBy : 'timestamp';
-  const safeSortOrder = (sortOrder || '').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+  // Safe sorting
+  const validSortCols = ['timestamp', 'severity', 'source', 'anomalyScore', 'createdAt'];
+  const safeSortBy = validSortCols.includes(sortBy) ? sortBy : 'timestamp';
+  const safeOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-  // Count total matching logs
-  const countQuery = `SELECT COUNT(*) as count FROM logs ${whereClause}`;
-  const totalCount = db.prepare(countQuery).get(params).count;
+  // Count total matching
+  const countSql = `SELECT COUNT(*) as total FROM logs ${whereClause}`;
+  const countStmt = db.prepare(countSql);
+  const totalResult = countStmt.get(params);
+  const total = totalResult ? totalResult.total : 0;
 
-  // Retrieve paginated records
-  const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 500);
-  const parsedOffset = Math.max(parseInt(offset, 10) || 0, 0);
-
-  const selectQuery = `
+  // Fetch paginated records
+  const querySql = `
     SELECT * FROM logs 
     ${whereClause} 
-    ORDER BY ${safeSortBy} ${safeSortOrder} 
+    ORDER BY ${safeSortBy} ${safeOrder} 
     LIMIT @limit OFFSET @offset
   `;
-
-  const rows = db.prepare(selectQuery).all({
+  const selectStmt = db.prepare(querySql);
+  const records = selectStmt.all({
     ...params,
-    limit: parsedLimit,
-    offset: parsedOffset
+    limit: Math.max(1, Math.min(100, parseInt(limit, 10) || 50)),
+    offset: Math.max(0, parseInt(offset, 10) || 0)
   });
 
   return {
-    total: totalCount,
-    limit: parsedLimit,
-    offset: parsedOffset,
-    logs: rows.map(formatLogRecord)
+    total,
+    limit: parseInt(limit, 10) || 50,
+    offset: parseInt(offset, 10) || 0,
+    logs: records.map(formatLogRecord)
   };
 }
 
 /**
- * Retrieves a single log entry by ID.
+ * Retrieves a single log by its primary ID.
  */
 export function getLogById(id) {
-  const row = selectByIdStmt.get(id);
-  if (!row) return null;
-  return formatLogRecord(row);
+  const record = selectByIdStmt.get(id);
+  return formatLogRecord(record);
 }
 
 /**
- * Analyzes an existing anomaly with Gemini AI and persists the root cause explanation.
- * 
- * @param {string} id - The log ID
- * @returns {Promise<Object>} Updated log record with AI explanation
- */
-export async function analyzeLogAnomaly(id) {
-  const log = getLogById(id);
-  if (!log) {
-    const error = new Error(`Log with ID '${id}' not found`);
-    error.statusCode = 404;
-    throw error;
-  }
-
-  if (!log.isAnomaly) {
-    const error = new Error(`Log '${id}' is not flagged as an anomaly. AI analysis is only performed on detected anomalies.`);
-    error.statusCode = 400;
-    throw error;
-  }
-
-  // Call Gemini AI
-  const analysis = await geminiService.analyzeAnomaly(log);
-
-  // Persist AI analysis
-  updateAiAnalysisStmt.run({
-    id: log.id,
-    aiExplanation: analysis.explanation,
-    aiRootCause: analysis.likelyRootCause,
-    aiNextStep: analysis.nextStep,
-    aiGeneratedAt: analysis.generatedAt
-  });
-
-  return getLogById(id);
-}
-
-/**
- * Deletes a single log entry by ID.
+ * Deletes a single log by its primary ID.
  */
 export function deleteLogById(id) {
   const result = deleteByIdStmt.run(id);
@@ -299,7 +329,7 @@ export function deleteLogById(id) {
 }
 
 /**
- * Deletes all stored logs.
+ * Clears all logs from the database.
  */
 export function clearAllLogs() {
   const result = clearAllStmt.run();
@@ -307,61 +337,115 @@ export function clearAllLogs() {
 }
 
 /**
- * Seeds the database with the pre-defined synthetic dataset.
+ * Seeds the database with the synthetic dataset.
  */
-export function seedSyntheticLogs() {
-  const dataPath = path.resolve(__dirname, '../data/syntheticLogs.json');
-  const rawData = fs.readFileSync(dataPath, 'utf-8');
-  const syntheticLogs = JSON.parse(rawData);
-
-  // Clear existing before seeding
+export function seedDatabase() {
   clearAllLogs();
-
+  const dataPath = path.resolve(__dirname, '../data/syntheticLogs.json');
+  const rawData = fs.readFileSync(dataPath, 'utf8');
+  const syntheticLogs = JSON.parse(rawData);
   return importLogs(syntheticLogs);
 }
 
 /**
- * Computes aggregation statistics across the dataset.
+ * Aggregates statistics about the dataset.
  */
-export function getLogStats() {
-  const total = db.prepare('SELECT COUNT(*) as count FROM logs').get().count;
-  const anomalies = db.prepare('SELECT COUNT(*) as count FROM logs WHERE isAnomaly = 1').get().count;
-  const analyzed = db.prepare('SELECT COUNT(*) as count FROM logs WHERE isAnomaly = 1 AND aiExplanation IS NOT NULL').get().count;
-  const normal = total - anomalies;
-
-  const severityCounts = db.prepare(`
+export function getLogStatistics() {
+  const totalStmt = db.prepare(`SELECT COUNT(*) as total FROM logs`);
+  const anomaliesStmt = db.prepare(`SELECT COUNT(*) as anomalies FROM logs WHERE isAnomaly = 1`);
+  const analyzedStmt = db.prepare(`SELECT COUNT(*) as analyzed FROM logs WHERE aiExplanation IS NOT NULL`);
+  
+  const severityStmt = db.prepare(`
     SELECT severity, COUNT(*) as count 
     FROM logs 
     GROUP BY severity
-  `).all();
-
-  const sourceCounts = db.prepare(`
+  `);
+  
+  const sourceStmt = db.prepare(`
     SELECT source, COUNT(*) as count 
     FROM logs 
-    GROUP BY source 
-    ORDER BY count DESC 
-    LIMIT 10
-  `).all();
+    GROUP BY source
+  `);
+
+  const total = totalStmt.get().total;
+  const anomalies = anomaliesStmt.get().anomalies;
+  const analyzed = analyzedStmt.get().analyzed;
+  const normal = total - anomalies;
+  const anomalyRate = total > 0 ? ((anomalies / total) * 100).toFixed(1) : 0;
+
+  const severityCounts = {};
+  for (const row of severityStmt.all()) {
+    severityCounts[row.severity] = row.count;
+  }
+
+  const sourceCounts = {};
+  for (const row of sourceStmt.all()) {
+    sourceCounts[row.source] = row.count;
+  }
 
   return {
     total,
     anomalies,
-    analyzed,
     normal,
-    anomalyRate: total > 0 ? Number(((anomalies / total) * 100).toFixed(2)) : 0,
-    bySeverity: Object.fromEntries(severityCounts.map(r => [r.severity, r.count])),
-    bySource: Object.fromEntries(sourceCounts.map(r => [r.source, r.count]))
+    analyzed,
+    anomalyRate: Number(anomalyRate),
+    bySeverity: severityCounts,
+    bySource: sourceCounts
   };
 }
+
+/**
+ * Performs Gemini AI root-cause analysis for an already-detected anomalous log.
+ */
+export async function analyzeLogAnomaly(id) {
+  // 1. Fetch log
+  const log = getLogById(id);
+  if (!log) {
+    const error = new Error(`Log with ID '${id}' not found`);
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // 2. Strict Architectural Gate: AI only analyzes detected anomalies
+  if (!log.isAnomaly) {
+    const error = new Error(
+      `Log with ID '${id}' is not flagged as an anomaly (score: ${log.anomalyScore}). Gemini AI analysis is strictly reserved for anomalous events.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 3. Request Gemini AI Analysis
+  const aiResult = await geminiService.analyzeAnomaly(log);
+
+  // 4. Persist AI Analysis to SQLite
+  const generatedAt = aiResult.generatedAt || new Date().toISOString();
+  updateAiAnalysisStmt.run({
+    id,
+    aiExplanation: aiResult.explanation,
+    aiRootCause: aiResult.likelyRootCause,
+    aiNextStep: aiResult.nextStep,
+    aiGeneratedAt: generatedAt
+  });
+
+  // 5. Return updated record
+  return getLogById(id);
+}
+
+export const seedSyntheticLogs = seedDatabase;
+export const getLogStats = getLogStatistics;
 
 export default {
   createLog,
   importLogs,
   getLogs,
   getLogById,
-  analyzeLogAnomaly,
   deleteLogById,
   clearAllLogs,
+  seedDatabase,
   seedSyntheticLogs,
-  getLogStats
+  getLogStatistics,
+  getLogStats,
+  analyzeLogAnomaly,
+  getRecentIpFailureCount
 };
