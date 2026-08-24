@@ -2,15 +2,16 @@ import app from './app.js';
 import { config } from './config/index.js';
 
 const PORT = config.port;
+const HOST = config.host;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log('====================================================');
-  console.log(`🚀 Smart Log Analyzer Backend running on port ${PORT}`);
+  console.log(`🚀 Smart Log Analyzer Backend running on ${HOST}:${PORT}`);
   console.log(`📊 Mode: ${config.nodeEnv}`);
   console.log(`📁 Database Path: ${config.dbPath}`);
   console.log(`⚙️ Anomaly Threshold: ${config.anomalyThreshold}`);
-  console.log(`🔗 API Base: http://localhost:${PORT}`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`🔗 API Base: http://${HOST}:${PORT}`);
+  console.log(`🏥 Health Check: http://${HOST}:${PORT}/api/health`);
   console.log('====================================================');
 });
 

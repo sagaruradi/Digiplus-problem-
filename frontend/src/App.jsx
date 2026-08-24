@@ -54,7 +54,7 @@ export default function App() {
       setGlobalError(null);
     } catch (err) {
       setHealth({ status: 'unhealthy' });
-      setGlobalError(`Backend service is unreachable at http://localhost:5000: ${err.message}`);
+      setGlobalError(`Backend service is unreachable: ${err.message}`);
     }
   };
 
