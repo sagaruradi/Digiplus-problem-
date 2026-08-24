@@ -2,7 +2,9 @@
  * API Service Client for Smart Log Analyzer REST API
  */
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api` 
+  : '/api';
 
 async function handleResponse(response) {
   const data = await response.json().catch(() => ({}));
