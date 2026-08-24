@@ -1,0 +1,13 @@
+{
+  "name": "smart-log-analyzer-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Log Analyzer & Anomaly Detector Monorepo",
+  "scripts": {
+    "install:backend": "npm install --prefix backend",
+    "install:frontend": "npm install --prefix frontend",
+    "build": "npm install --prefix backend",
+    "start": "npm start --prefix backend",
+    "test": "npm test --prefix backend"
+  }
+}
